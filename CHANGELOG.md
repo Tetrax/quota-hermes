@@ -3,6 +3,26 @@
 All notable changes to `quota-hermes` are documented here. The project uses
 [Semantic Versioning](https://semver.org/).
 
+## [1.0.1] — 2026-08-22
+
+Distribution fix: explicit support for split installs (remote gateway / VPS).
+
+### Added
+
+- `./install.sh --backend-only` — installs the Python backend only (the Hermes
+  gateway / server side).
+- `./install.sh --desktop-only` — installs the Desktop widget only (the machine
+  running Hermes Desktop).
+- The default `./install.sh` now prints a clear final notice in the terminal:
+  if Hermes Desktop runs on **another** machine, clone `quota-hermes` there and
+  run `./install.sh --desktop-only` — no manual SCP, no guessing.
+- README: the Installation section documents the two-part layout (backend vs
+  widget) and both install modes up front.
+- CI: the isolated install job now covers all three modes, flag mutual
+  exclusion, per-profile symlinks per mode, and uninstall compatibility.
+
+No plugin behavior changed; the backend code is unchanged.
+
 ## [1.0.0] — 2026-08-22
 
 First public release. This is the public, generic, installable release of the
@@ -35,4 +55,5 @@ line and the public `1.x` line are separate version spaces.
 - Removed an upstream debug script (`scripts/decode_grok_proto.py`) that carried
   a hardcoded author path.
 
+[1.0.1]: https://github.com/tetrax/quota-hermes/releases/tag/v1.0.1
 [1.0.0]: https://github.com/tetrax/quota-hermes/releases/tag/v1.0.0

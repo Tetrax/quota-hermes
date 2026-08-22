@@ -81,18 +81,53 @@ hidden.
 
 ## Installation
 
+`quota-hermes` has two parts:
+
+- the **Python backend** (`plugins/quota/`) — used by the Hermes gateway/CLI
+  (`hermes quota …`);
+- the **Desktop widget** (`desktop-plugins/quota/plugin.js`) — loaded **locally**
+  by the Hermes Desktop app.
+
+Install whichever part runs on this machine.
+
+### Single machine — Hermes and Desktop on the same host
+
 ```bash
 git clone https://github.com/tetrax/quota-hermes.git
 cd quota-hermes
 ./install.sh
 ```
 
-`./install.sh` installs one global backend (`plugins/quota/`) and one Desktop
-widget (`desktop-plugins/quota/`), and enables the plugin for every Hermes
-profile without touching your other plugins. It is **idempotent** — re-run it
-anytime to update. `./uninstall.sh` removes it symmetrically.
+Installs the backend **and** the widget, and enables the plugin for every
+Hermes profile without touching your other plugins. It is **idempotent** — re-run
+it anytime to update. `./uninstall.sh` removes everything it installed on this
+machine.
 
-Verify:
+### Remote gateway / VPS — Hermes on the server, Desktop on your laptop
+
+On the server (Hermes gateway):
+
+```bash
+./install.sh --backend-only
+```
+
+On the machine that runs Hermes Desktop:
+
+```bash
+./install.sh --desktop-only
+```
+
+**Both installations are required when they run on different machines:** the
+Python backend is used on the Hermes/gateway side, while `desktop/plugin.js`
+is loaded locally by Hermes Desktop. With the widget only, the Desktop pane
+shows *backend unavailable* until the backend is installed on the gateway; with
+the backend only, the CLI works but no widget exists on the Desktop machine.
+
+> `./install.sh` (no flag) prints this split clearly at the end of the install,
+> so the remote-gateway case is visible in the terminal even without reading
+> this README.
+
+Verify (on the gateway machine):
 
 ```bash
 hermes plugins doctor quota && hermes quota refresh && hermes quota status
@@ -178,7 +213,9 @@ git pull
 ./install.sh
 ```
 
-Then restart Hermes Desktop completely and run `hermes quota refresh`.
+If you installed with a mode flag, re-run the same command on the same machine
+(`./install.sh --backend-only` or `./install.sh --desktop-only`). Then restart
+Hermes Desktop completely and run `hermes quota refresh`.
 
 ## Uninstalling
 

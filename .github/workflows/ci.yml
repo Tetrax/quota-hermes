@@ -97,16 +97,18 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: install → re-install → uninstall → re-install (fake hermes)
+      - name: Install modes (all / backend-only / desktop-only, fake hermes)
         run: |
           set -euo pipefail
           export HERMES_HOME="$(mktemp -d)/hermes"
-          mkdir -p "$HERMES_HOME/bin"
+          mkdir -p "$HERMES_HOME/bin" "$HERMES_HOME/profiles/demo"
 
           # Minimal `hermes` stub: the installer only ever shells out to
-          # `hermes config get|set|unset`. "Not set" is the clean-room default.
+          # `hermes [-p <profile>] config get|set|unset`. "Not set" is the
+          # clean-room default; the named profile exercises the -p path.
           cat > "$HERMES_HOME/bin/hermes" <<'SH'
           #!/usr/bin/env bash
+          while [ "$#" -gt 0 ]; do [ "$1" = "-p" ] && { shift 2; continue; }; break; done
           case "${1:-}" in
             config)
               case "${2:-}" in
@@ -120,23 +122,58 @@ jobs:
           chmod +x "$HERMES_HOME/bin/hermes"
           export PATH="$HERMES_HOME/bin:$PATH"
 
-          ./install.sh
+          # default: backend + widget + config + per-profile symlinks
+          ./install.sh > install.log 2>&1
           test -f "$HERMES_HOME/plugins/quota/plugin.yaml"
           test -f "$HERMES_HOME/desktop-plugins/quota/plugin.js"
-          echo "install OK"
+          test -L "$HERMES_HOME/profiles/demo/plugins/quota"
+          test -L "$HERMES_HOME/profiles/demo/desktop-plugins/quota"
+          grep -q 'ANOTHER machine' install.log
+          echo "install (all) OK"
 
-          ./install.sh
+          ./install.sh > /dev/null 2>&1
           echo "re-install (idempotent) OK"
 
-          ./uninstall.sh
-          test ! -e "$HERMES_HOME/plugins/quota"
-          test ! -e "$HERMES_HOME/desktop-plugins/quota"
-          echo "uninstall OK"
+          rm -rf "$HERMES_HOME/plugins" "$HERMES_HOME/desktop-plugins" \
+                 "$HERMES_HOME/profiles/demo/plugins" "$HERMES_HOME/profiles/demo/desktop-plugins"
 
-          ./install.sh
+          # backend-only: no widget anywhere, config still handled
+          ./install.sh --backend-only > install.log 2>&1
           test -f "$HERMES_HOME/plugins/quota/plugin.yaml"
+          test ! -e "$HERMES_HOME/desktop-plugins/quota"
+          test -L "$HERMES_HOME/profiles/demo/plugins/quota"
+          test ! -e "$HERMES_HOME/profiles/demo/desktop-plugins/quota"
+          grep -q 'desktop-only' install.log
+          echo "install --backend-only OK"
+
+          rm -rf "$HERMES_HOME/plugins" "$HERMES_HOME/desktop-plugins" \
+                 "$HERMES_HOME/profiles/demo/plugins" "$HERMES_HOME/profiles/demo/desktop-plugins"
+
+          # desktop-only: widget only, no backend, no hermes config calls
+          ./install.sh --desktop-only > install.log 2>&1
           test -f "$HERMES_HOME/desktop-plugins/quota/plugin.js"
-          echo "re-install-after-uninstall OK"
+          test ! -e "$HERMES_HOME/plugins/quota"
+          test -L "$HERMES_HOME/profiles/demo/desktop-plugins/quota"
+          test ! -e "$HERMES_HOME/profiles/demo/plugins/quota"
+          grep -q 'backend-only' install.log
+          echo "install --desktop-only OK"
+
+          # mutually exclusive flags are rejected
+          if ./install.sh --backend-only --desktop-only > /dev/null 2>&1; then
+            echo "mutual exclusion FAILED" >&2; exit 1
+          fi
+          echo "mutual exclusion OK"
+
+          # unknown flag is rejected
+          if ./install.sh --bogus > /dev/null 2>&1; then
+            echo "unknown flag FAILED" >&2; exit 1
+          fi
+          echo "unknown flag OK"
+
+          # uninstall is safe after a mode install (backend absent)
+          ./uninstall.sh > /dev/null 2>&1
+          test ! -e "$HERMES_HOME/desktop-plugins/quota"
+          echo "uninstall after desktop-only OK"
 
   env-independence:
     name: No environment-specific references
