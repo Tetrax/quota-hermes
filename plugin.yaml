@@ -1,0 +1,7 @@
+name: quota
+version: 1.0.0
+description: "Provider-agnostic quota / rate-limit status for Hermes: /quota command, desktop widget with status-bar chips and a docked pane, focused-session usage/cost, and 1/7/30/90-day history. A fork of rarf/hermes-quota-plugin (MIT) adding DeepSeek balance, qualified session cost, provider history, and the GitHub auto-update check removed. Provider failures are isolated and no secret is sent to Desktop."
+author: rarf and quota-hermes contributors
+kind: standalone
+provides_commands:
+  - quota

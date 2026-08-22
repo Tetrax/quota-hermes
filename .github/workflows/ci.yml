@@ -1,0 +1,154 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  python-tests:
+    name: Python tests (${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Byte-compile all backend sources
+        run: python -m py_compile __init__.py commands.py quota_cache.py quota_providers/*.py
+
+      - name: Run offline unit tests
+        run: |
+          python -m unittest discover -s tests -p "test_*.py" -v
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+
+  widget-js:
+    name: Desktop widget syntax + logic
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: node --check every desktop JS file
+        run: |
+          for f in desktop/*.js; do
+            node --check "$f"
+            echo "OK $f"
+          done
+
+      - name: Widget logic unit tests
+        run: node --test tests/test_pane_toggle.mjs
+
+      - name: Biome lint (format gate intentionally off)
+        run: npx --yes @biomejs/biome lint desktop/
+
+  shell-scripts:
+    name: Shell script syntax
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: bash -n install/uninstall/scripts
+        run: |
+          bash -n install.sh uninstall.sh scripts/hermes-config.sh scripts/hermes-home.sh
+          echo "shell syntax OK"
+
+  manifest:
+    name: plugin.yaml sanity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Version is valid semver and matches nothing stale
+        run: |
+          python - <<'PY'
+          import re, sys, pathlib
+          text = pathlib.Path("plugin.yaml").read_text(encoding="utf-8")
+          match = re.search(r'^version:\s*(\S+)', text, re.MULTILINE)
+          if not match:
+              sys.exit("plugin.yaml: missing version key")
+          version = match.group(1)
+          if not re.fullmatch(r"\d+\.\d+\.\d+", version):
+              sys.exit(f"plugin.yaml: version '{version}' is not semver X.Y.Z")
+          print(f"plugin.yaml version {version} OK")
+          PY
+
+  install-sim:
+    name: Install / uninstall in an isolated home
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: install → re-install → uninstall → re-install (fake hermes)
+        run: |
+          set -euo pipefail
+          export HERMES_HOME="$(mktemp -d)/hermes"
+          mkdir -p "$HERMES_HOME/bin"
+
+          # Minimal `hermes` stub: the installer only ever shells out to
+          # `hermes config get|set|unset`. "Not set" is the clean-room default.
+          cat > "$HERMES_HOME/bin/hermes" <<'SH'
+          #!/usr/bin/env bash
+          case "${1:-}" in
+            config)
+              case "${2:-}" in
+                get) echo "Config key not set: ${*:3}" >&2; exit 1 ;;
+                *) exit 0 ;;
+              esac
+              ;;
+            *) exit 0 ;;
+          esac
+          SH
+          chmod +x "$HERMES_HOME/bin/hermes"
+          export PATH="$HERMES_HOME/bin:$PATH"
+
+          ./install.sh
+          test -f "$HERMES_HOME/plugins/quota/plugin.yaml"
+          test -f "$HERMES_HOME/desktop-plugins/quota/plugin.js"
+          echo "install OK"
+
+          ./install.sh
+          echo "re-install (idempotent) OK"
+
+          ./uninstall.sh
+          test ! -e "$HERMES_HOME/plugins/quota"
+          test ! -e "$HERMES_HOME/desktop-plugins/quota"
+          echo "uninstall OK"
+
+          ./install.sh
+          test -f "$HERMES_HOME/plugins/quota/plugin.yaml"
+          test -f "$HERMES_HOME/desktop-plugins/quota/plugin.js"
+          echo "re-install-after-uninstall OK"
+
+  env-independence:
+    name: No environment-specific references
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fail on personal/environment-specific or secret references
+        run: |
+          if grep -rInE '/home/tetrax|valdev\.me|obsidian|discord|allovoisins|gh[opsu]_[A-Za-z0-9]{12,}|sk-[A-Za-z0-9]{12,}' \
+              --exclude-dir=.git --exclude-dir=.github --exclude='*.png' --exclude='*.svg' . ; then
+            echo "Forbidden references found (see above)." >&2
+            exit 1
+          fi
+          echo "no forbidden references"

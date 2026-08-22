@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+*.tmp
+*.log
+.DS_Store
+quota_cache.json
+quota_cache.json.tmp
+quota_history.jsonl
+quota_history.jsonl.tmp
