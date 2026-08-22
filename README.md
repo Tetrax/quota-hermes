@@ -60,11 +60,6 @@ The OpenAI Codex fetcher goes beyond the core: it parses
 (`5.3 Codex Spark · 5h`, `5.3 Codex Spark · Weekly`) that would otherwise stay
 hidden.
 
-## Screenshots
-
-`docs/images/quota-pane.png` shows the bottom docked pane and the status-bar
-chips.
-
 ## Prerequisites
 
 - A working [Hermes](https://hermes-agent.nousresearch.com/) install with
