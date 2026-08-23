@@ -239,10 +239,14 @@ Then restart Hermes Desktop completely and run `hermes quota refresh`.
 > alias quota-update='cd ~/quota-hermes && ./update.sh --desktop-only'
 > ```
 >
-> Adjust the path if you cloned elsewhere. There is deliberately **no automatic
-> background updater**: `quota-hermes` never phones GitHub on its own (see
-> [Security & credential storage](#security--credential-storage)) — updates are
-> a deliberate one-command step.
+> Adjust the path if you cloned elsewhere. **After adding or changing the
+> alias, open a new terminal** (or run `source ~/.zshrc`). An already-open
+> terminal keeps the previous alias definition: if `quota-update` still uses
+> an outdated path, run `unalias quota-update` first (or just open a new
+> terminal — the last alias in the file wins). There is deliberately **no
+> automatic background updater**: `quota-hermes` never phones GitHub on its
+> own (see [Security & credential storage](#security--credential-storage)) —
+> updates are a deliberate one-command step.
 
 ## Uninstalling
 

@@ -3,6 +3,18 @@
 All notable changes to `quota-hermes` are documented here. The project uses
 [Semantic Versioning](https://semver.org/).
 
+## [1.0.4] — 2026-08-23
+
+Docs: shell alias troubleshooting.
+
+### Added
+
+- README: note that after adding or changing the `quota-update` alias you must
+  open a new terminal (or `source` the rc file); an already-open session keeps
+  the previous definition — `unalias quota-update` it or start a new terminal.
+
+No code change.
+
 ## [1.0.3] — 2026-08-23
 
 Tooling / docs: one-command updates and clearer installation guidance.
@@ -89,6 +101,7 @@ line and the public `1.x` line are separate version spaces.
 - Removed an upstream debug script (`scripts/decode_grok_proto.py`) that carried
   a hardcoded author path.
 
+[1.0.4]: https://github.com/tetrax/quota-hermes/releases/tag/v1.0.4
 [1.0.3]: https://github.com/tetrax/quota-hermes/releases/tag/v1.0.3
 [1.0.2]: https://github.com/tetrax/quota-hermes/releases/tag/v1.0.2
 [1.0.1]: https://github.com/tetrax/quota-hermes/releases/tag/v1.0.1
