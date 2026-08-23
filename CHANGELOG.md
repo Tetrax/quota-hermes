@@ -3,6 +3,24 @@
 All notable changes to `quota-hermes` are documented here. The project uses
 [Semantic Versioning](https://semver.org/).
 
+## [1.0.2] — 2026-08-22
+
+Bug fix: status-bar chips could stop reopening the docked quota pane.
+
+### Fixed
+
+- The chip toggle is now driven by the **real layout-tree visibility** of the
+  pane (`host.paneVisibility`) instead of the widget's internal state. Closing
+  the pane through the shell (dismissed, hidden, minimized, layout change)
+  previously desynchronized the widget, so the next click no-oped instead of
+  reopening; it now reopens on the very next click.
+- The pane contribution id is now `quota-pane` (scoped `quota:quota-pane`),
+  which also sheds any stale dismissal record an earlier build persisted.
+- Falls back to the previous internal-state behavior on desktop builds that
+  predate `host.paneVisibility`.
+
+No backend change; no provider change.
+
 ## [1.0.1] — 2026-08-22
 
 Distribution fix: explicit support for split installs (remote gateway / VPS).
@@ -55,5 +73,6 @@ line and the public `1.x` line are separate version spaces.
 - Removed an upstream debug script (`scripts/decode_grok_proto.py`) that carried
   a hardcoded author path.
 
+[1.0.2]: https://github.com/tetrax/quota-hermes/releases/tag/v1.0.2
 [1.0.1]: https://github.com/tetrax/quota-hermes/releases/tag/v1.0.1
 [1.0.0]: https://github.com/tetrax/quota-hermes/releases/tag/v1.0.0

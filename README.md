@@ -234,6 +234,7 @@ symlinks it created.
 |---|---|
 | Widget shows "backend unavailable" | The Python backend isn't mounted yet, or you're in a named profile whose copy is missing. Restart Hermes Desktop completely; run `hermes plugins doctor quota`. |
 | Chips / pane don't appear at all | Reload desktop plugins (⌘K → *Reload desktop plugins*), or check the status bar is enabled (⌘K → *Toggle status bar*). |
+| Clicking a chip doesn't reopen the pane | Update the widget (re-run `./install.sh --desktop-only` or copy `desktop/plugin.js`), then reload desktop plugins. If the pane was previously closed via the shell and still doesn't come back, reset the layout (⌘K → *Reset layout*). |
 | DeepSeek shows `no-credentials` | No key configured. See [DeepSeek](#deepseek). |
 | A provider shows `unavailable (…)` | That provider is unconfigured or its fetch failed; the rest are unaffected (fail-open). |
 | History is empty | History starts on first refresh and needs **at least two** refreshes to draw a sparkline. |

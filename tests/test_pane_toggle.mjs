@@ -54,6 +54,14 @@ test("state-less call behaves like a closed pane", () => {
 	assert.deepEqual(nextToggle(null, "ctx"), { open: true, target: "ctx" });
 });
 
+test("stale internal state never blocks reopening (dismissed/hidden pane)", () => {
+	// The widget feeds REAL layout visibility into nextToggle, so a pane closed
+	// through the shell reports open:false even when a stale internal flag said
+	// otherwise — the very next click reopens it instead of no-oping.
+	const s = nextToggle({ open: false, target: "ctx" }, "ctx");
+	assert.deepEqual(s, { open: true, target: "ctx" });
+});
+
 test("full toggle cycle open -> retarget -> close -> open", () => {
 	let state = nextToggle(undefined, "ctx");
 	state = nextToggle(state, "openai-codex");

@@ -1365,7 +1365,8 @@ function QuotaPane() {
 	const qc = useQueryClient();
 	const [view, setView] = useState("list"); // 'list' | 'settings'
 	const target = useValue(paneTargetAtom);
-	const dockedOpen = useValue(paneOpenAtom);
+	const visAtom = paneVisibilityAtom || paneOpenAtom;
+	const dockedOpen = useValue(visAtom);
 	const { data, isError, isLoading } = useQuota();
 	const refresh = useMutation({
 		mutationFn: async () => {
@@ -1749,15 +1750,23 @@ function HistorySection() {
 
 // ---- registration ---------------------------------------------------------
 
-// Runtime pane state: paneOpen tracks the docked-pane contribution created by
-// registerDockedPane; target records which status-bar chip last opened or
-// retargeted it. Not persisted — showDockedPaneAtom keeps the startup
-// preference.
+// Runtime pane state: paneOpen/paneTarget are the toggle state used when the
+// desktop build predates host.paneVisibility. When that API exists,
+// paneVisibilityAtom reflects the REAL layout-tree visibility of the pane
+// (dismissed / hidden / minimized zones included) and is the source of truth,
+// so a pane closed through the shell reopens on the very next chip click.
+// showDockedPaneAtom keeps the persisted "show at startup" preference.
 const paneOpenAtom = atom(false);
 const paneTargetAtom = atom(null);
 
+// Contribution id — scoped to `quota:quota-pane` by the SDK. Stable, and
+// deliberately not the generic "pane": a fresh id also sheds any stale
+// dismissal record an earlier build may have persisted for the old id.
+const PANE_ID = "quota-pane";
+
 // PANE-TOGGLE-START (pure — exercised by tests/test_pane_toggle.mjs)
-// State: { open: boolean, target: string|null }.
+// State: { open: boolean, target: string|null } — `open` is the REAL pane
+// visibility (host.paneVisibility when available, else the runtime atom).
 // Click semantics:
 //   closed            -> open on the clicked target
 //   open, same target -> close (target reset)
@@ -1770,6 +1779,29 @@ function nextToggle(state, clicked) {
 	return { open: true, target: clicked };
 }
 // PANE-TOGGLE-END
+
+// Real pane visibility (feature-detect: older desktop builds lack it).
+let paneVisibilityAtom = null;
+try {
+	if (typeof host.paneVisibility === "function") {
+		paneVisibilityAtom = host.paneVisibility("quota:" + PANE_ID);
+	}
+} catch {
+	paneVisibilityAtom = null;
+}
+
+// The pane counts as open only when the layout tree actually shows it.
+// Falls back to the runtime atom on builds without paneVisibility.
+function paneVisibleNow() {
+	if (paneVisibilityAtom) {
+		try {
+			return !!paneVisibilityAtom.get();
+		} catch {
+			/* fall through */
+		}
+	}
+	return paneOpenAtom.get();
+}
 
 let _paneDisposer = null;
 
@@ -1788,7 +1820,7 @@ function registerDockedPane(force = false) {
 	if (!CTX || (!force && !showDockedPaneAtom.get())) return false;
 	try {
 		_paneDisposer = CTX.register({
-			id: "pane",
+			id: PANE_ID,
 			area: PANES_AREA,
 			title: "quota",
 			data: {
@@ -1806,13 +1838,13 @@ function registerDockedPane(force = false) {
 }
 
 // Real toggle: first click on a closed chip opens the pane, a second click on
-// the same chip closes it, clicking another chip retargets it in place.
-// Re-registering adopts/reveals the bottom contribution even if the user hid
-// or moved its previous layout instance; this tracks the SDK contribution,
-// not an unreliable guess at pane visibility.
+// the same chip closes it, and clicking another chip retargets it in place.
+// The decision is driven by the REAL layout-tree visibility, so a pane closed
+// through the shell (dismissed, hidden, minimized, layout change) reopens on
+// the very next click instead of no-oping on a stale internal state.
 function applyPaneToggle(target) {
 	const next = nextToggle(
-		{ open: paneOpenAtom.get(), target: paneTargetAtom.get() },
+		{ open: paneVisibleNow(), target: paneTargetAtom.get() },
 		target,
 	);
 	paneOpenAtom.set(next.open);
@@ -1827,7 +1859,7 @@ function applyPaneToggle(target) {
 }
 
 // In-pane close button: closes and resyncs the runtime state so the next chip
-// click toggles open again (the shell's own close affordance cannot notify us).
+// click toggles open again.
 function closeDockedPaneFromUI() {
 	paneOpenAtom.set(false);
 	paneTargetAtom.set(null);
