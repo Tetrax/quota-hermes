@@ -3,6 +3,22 @@
 All notable changes to `quota-hermes` are documented here. The project uses
 [Semantic Versioning](https://semver.org/).
 
+## [1.0.3] — 2026-08-23
+
+Tooling / docs: one-command updates and clearer installation guidance.
+
+### Added
+
+- `update.sh` — fetches the latest changes (`git pull --ff-only`) and re-runs
+  the installer in place, with the same flags as `install.sh`
+  (`--backend-only` / `--desktop-only`). One command instead of two or three.
+- README: one-command alias snippet (`quota-update`), an explicit note that the
+  clone location is irrelevant (the installer resolves the real Hermes home),
+  and a troubleshooting row for a deleted widget folder (the installer
+  recreates it).
+
+No plugin behavior changed; no backend change.
+
 ## [1.0.2] — 2026-08-22
 
 Bug fix: status-bar chips could stop reopening the docked quota pane.
@@ -73,6 +89,7 @@ line and the public `1.x` line are separate version spaces.
 - Removed an upstream debug script (`scripts/decode_grok_proto.py`) that carried
   a hardcoded author path.
 
+[1.0.3]: https://github.com/tetrax/quota-hermes/releases/tag/v1.0.3
 [1.0.2]: https://github.com/tetrax/quota-hermes/releases/tag/v1.0.2
 [1.0.1]: https://github.com/tetrax/quota-hermes/releases/tag/v1.0.1
 [1.0.0]: https://github.com/tetrax/quota-hermes/releases/tag/v1.0.0

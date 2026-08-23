@@ -58,9 +58,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: bash -n install/uninstall/scripts
+      - name: bash -n install/update/uninstall/scripts
         run: |
-          bash -n install.sh uninstall.sh scripts/hermes-config.sh scripts/hermes-home.sh
+          bash -n install.sh update.sh uninstall.sh scripts/hermes-config.sh scripts/hermes-home.sh
           echo "shell syntax OK"
 
   manifest:

@@ -90,6 +90,12 @@ hidden.
 
 Install whichever part runs on this machine.
 
+> The cloned folder is only the **source** of files — place it anywhere you
+> like (`~/quota-hermes`, `~/dev/…`, …). The installer copies the plugin into
+> the Hermes home it resolves (`$HERMES_HOME`, `~/.hermes` by default), so the
+> clone location does not matter. Keep the clone on the machine(s) you install
+> on: `update.sh` and `install.sh` read from it.
+
 ### Single machine — Hermes and Desktop on the same host
 
 ```bash
@@ -207,15 +213,36 @@ hermes quota provider openai-codex             # single provider detail
 
 ## Updating
 
+One command (fetches + reinstalls, same flags as `install.sh`):
+
+```bash
+cd quota-hermes
+./update.sh                 # single machine (backend + widget)
+./update.sh --desktop-only  # machine running Hermes Desktop
+./update.sh --backend-only  # remote Hermes gateway
+```
+
+…or step by step:
+
 ```bash
 cd quota-hermes
 git pull
-./install.sh
+./install.sh                # same flags as above
 ```
 
-If you installed with a mode flag, re-run the same command on the same machine
-(`./install.sh --backend-only` or `./install.sh --desktop-only`). Then restart
-Hermes Desktop completely and run `hermes quota refresh`.
+Then restart Hermes Desktop completely and run `hermes quota refresh`.
+
+> **One-command alias** (macOS/Linux shell): add to your `~/.zshrc` or
+> `~/.bashrc`, then run `quota-update` from anywhere:
+>
+> ```bash
+> alias quota-update='cd ~/quota-hermes && ./update.sh --desktop-only'
+> ```
+>
+> Adjust the path if you cloned elsewhere. There is deliberately **no automatic
+> background updater**: `quota-hermes` never phones GitHub on its own (see
+> [Security & credential storage](#security--credential-storage)) — updates are
+> a deliberate one-command step.
 
 ## Uninstalling
 
@@ -234,6 +261,7 @@ symlinks it created.
 |---|---|
 | Widget shows "backend unavailable" | The Python backend isn't mounted yet, or you're in a named profile whose copy is missing. Restart Hermes Desktop completely; run `hermes plugins doctor quota`. |
 | Chips / pane don't appear at all | Reload desktop plugins (⌘K → *Reload desktop plugins*), or check the status bar is enabled (⌘K → *Toggle status bar*). |
+| Widget folder was deleted / missing | The installer recreates it: re-run `./install.sh --desktop-only` (or `./update.sh --desktop-only`). Nothing needs restoring by hand. |
 | Clicking a chip doesn't reopen the pane | Update the widget (re-run `./install.sh --desktop-only` or copy `desktop/plugin.js`), then reload desktop plugins. If the pane was previously closed via the shell and still doesn't come back, reset the layout (⌘K → *Reset layout*). |
 | DeepSeek shows `no-credentials` | No key configured. See [DeepSeek](#deepseek). |
 | A provider shows `unavailable (…)` | That provider is unconfigured or its fetch failed; the rest are unaffected (fail-open). |
